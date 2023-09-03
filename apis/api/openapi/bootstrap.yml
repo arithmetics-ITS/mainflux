@@ -1,9 +1,28 @@
 openapi: 3.0.1
 info:
   title: Mainflux Bootstrap service
-  description: HTTP API for managing platform things configuration.
-  version: "1.0.0"
+  description: |
+    HTTP API for managing platform things configuration.
+    Some useful links:
+    - [The Mainflux repository](https://github.com/mainflux/mainflux)
+  contact:
+    email: info@mainflux.com
+  license:
+    name: Apache 2.0
+    url: https://github.com/mainflux/mainflux/blob/master/LICENSE
+  version: 0.14.0
 
+servers:
+  - url: http://localhost:9013
+  - url: https://localhost:9013
+
+tags:
+  - name: configs
+    description: Everything about your Configs
+    externalDocs:
+      description: Find out more about Configs
+      url: http://docs.mainflux.io/
+  
 paths:
   /things/configs:
     post:
@@ -49,7 +68,7 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /things/configs/{configID}:
+  /things/configs/{configId}:
     get:
       summary: Retrieves config info (with channels).
       tags:
@@ -108,7 +127,7 @@ paths:
           description: Missing or invalid access token provided.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /things/configs/certs/{configID}:
+  /things/configs/certs/{configId}:
     patch:
       summary: Updates certs
       description: |
@@ -123,6 +142,7 @@ paths:
       responses:
         '200':
           description: Config updated.
+          $ref: "#/components/responses/ConfigUpdateCertsRes"
         '400':
           description: Failed due to malformed JSON.
         '401':
@@ -133,7 +153,7 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /things/configs/connections/{configID}:
+  /things/configs/connections/{configId}:
     put:
       summary: Updates channels the thing is connected to
       description: |
@@ -158,7 +178,7 @@ paths:
           description: Missing or invalid content type.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /things/bootstrap/{externalID}:
+  /things/bootstrap/{externalId}:
     get:
       summary: Retrieves configuration.
       description: |
@@ -180,7 +200,7 @@ paths:
           description: Failed to retrieve corresponding config.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /things/bootstrap/secure/{externalID}:
+  /things/bootstrap/secure/{externalId}:
     get:
       summary: Retrieves configuration.
       description: |
@@ -199,7 +219,7 @@ paths:
             Failed to retrieve corresponding config.
         '500':
           $ref: "#/components/responses/ServiceError"
-  /things/state/{configID}:
+  /things/state/{configId}:
     put:
       summary: Updates Config state.
       description: |
@@ -239,7 +259,7 @@ components:
     Config:
       type: object
       properties:
-        mainflux_id:
+        thing_id:
           type: string
           format: uuid
           description: Corresponding Mainflux Thing ID.
@@ -247,7 +267,7 @@ components:
           type: string
           format: uuid
           description: Corresponding Mainflux Thing key.
-        mainflux_channels:
+        channels:
           type: array
           minItems: 0
           items:
@@ -274,6 +294,12 @@ components:
           description: Free-form custom configuration.
         state:
           $ref: "#/components/schemas/State"
+        client_cert:
+          type: string
+          description: Client certificate.
+        ca_cert:
+          type: string
+          description: Issuing CA certificate.
       required:
         - external_id
         - external_key
@@ -305,15 +331,15 @@ components:
     BootstrapConfig:
       type: object
       properties:
-        mainflux_id:
+        thing_id:
           type: string
           format: uuid
           description: Corresponding Mainflux Thing ID.
-        mainflux_key:
+        thing_key:
           type: string
           format: uuid
           description: Corresponding Mainflux Thing key.
-        mainflux_channels:
+        channels:
           type: array
           minItems: 0
           items:
@@ -331,14 +357,35 @@ components:
           type: string
           description: Issuing CA certificate.
       required:
-        - mainflux_id
-        - mainflux_key
-        - mainflux_channels
+        - thing_id
+        - thing_key
+        - channels
+        - content
+    ConfigUpdateCerts:
+      type: object
+      properties:
+        thing_id:
+          type: string
+          format: uuid
+          description: Corresponding Mainflux Thing ID.
+        client_cert:
+          type: string
+          description: Client certificate.
+        client_key:
+          type: string
+          description: Key for the client_cert.
+        ca_cert:
+          type: string
+          description: Issuing CA certificate.
+      required:
+        - thing_id
+        - thing_key
+        - channels
         - content
 
   parameters:
     ConfigId:
-      name: configID
+      name: configId
       description: Unique Config identifier. It's the ID of the corresponding Thing.
       in: path
       schema:
@@ -346,7 +393,7 @@ components:
         format: uuid
       required: true
     ExternalId:
-      name: externalID
+      name: externalId
       description: Unique Config identifier provided by external entity.
       in: path
       schema:
@@ -511,6 +558,12 @@ components:
         application/json:
           schema:
             $ref: "./schemas/HealthInfo.yml"
+    ConfigUpdateCertsRes:
+      description: Data retrieved. Config certs updated.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ConfigUpdateCerts"
 
   securitySchemes:
     bearerAuth:
